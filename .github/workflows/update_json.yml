@@ -22,7 +22,7 @@ jobs:
           curl -sS -o jiotv.json "https://raw.githubusercontent.com/fakeall12398-sketch/JIO_TV/refs/heads/main/full_channels.json"
           
           export TZ="Asia/Kolkata"
-          echo "🚀 JioHotstar Synced | IST: $(date +'%Y-%m-%d %H:%M:%S') | ID: $RANDOM" >> jio_status.txt
+          echo "🚀 JioHotstar Synced BY Sayan | IST: $(date +'%Y-%m-%d %H:%M:%S') | ID: $RANDOM" >> jio_status.txt
 
       - name: Configure Git User
         run: |
