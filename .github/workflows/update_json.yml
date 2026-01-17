@@ -2,11 +2,14 @@ name: Automated Jio Hotstar JSON Updater
 
 on:
   schedule:
-    - cron: '*/45 * * * *' 
+    - cron: '*/45 * * * *'
   workflow_dispatch:
   push:
     branches:
       - main
+
+env:
+  TIMEZONE: Asia/Kolkata
 
 jobs:
   update-file:
@@ -25,17 +28,39 @@ jobs:
           git config --global user.name "kajju027"
           git config --global user.email "209622231+kajju027@users.noreply.github.com"
 
-      - name: Sync and Update Log
+      - name: Fetch Source & Compare
+        id: compare
+        env:
+          SOURCE_JSON_URL: "${{ secrets.SOURCE_JSON_URL }}"
         run: |
-          export TZ="Asia/Kolkata"
-          git pull origin main --rebase
-          curl -sS -o jiotv.json "https://raw.githubusercontent.com/fakeall12398-sketch/JIO_TV/refs/heads/main/full_channels.json"
+          export TZ="${TIMEZONE}"
+
+          echo "🔄 Downloading source JSON (from secret)..."
+          curl -sS -o jiotv_new.json "$SOURCE_JSON_URL"
+
+          if [ ! -f jiotv.json ]; then
+            mv jiotv_new.json jiotv.json
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if diff -q jiotv.json jiotv_new.json > /dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            mv jiotv_new.json jiotv.json
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update Status Log
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          export TZ="${TIMEZONE}"
           echo "🚀 JioHotstar Synced | IST: $(date +'%Y-%m-%d %H:%M:%S') | ID: $RANDOM" >> jio_status.txt
 
       - name: Commit and Push
+        if: steps.compare.outputs.changed == 'true'
         run: |
-          export TZ="Asia/Kolkata"
+          export TZ="${TIMEZONE}"
           git add jiotv.json jio_status.txt
-          git commit -m "JioHotstar Database Updated ✅ [$(date +'%d-%m-%Y %H:%M')]" --allow-empty
+          git commit -m "JioHotstar Database Updated ✅ [$(date +'%d-%m-%Y %H:%M')]"
           git push origin main
-          
